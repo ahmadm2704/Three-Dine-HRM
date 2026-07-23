@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     }
 
     const finalPassword = password || 'TD-9x82q!';
-    const loginUrl = 'https://hrm.threedinecorporation.com/login';
+    const loginUrl = 'https://hrm.threedinecorporation.com';
 
     // Configure the email transporter
     const transporter = nodemailer.createTransport({

@@ -133,21 +133,25 @@ export default function TimeOff() {
   };
   
   const handleStatusChange = async (id: string, newStatus: string) => {
+    // Optimistic UI update
     setRequests(prev => prev.map(r => r.id === id ? { ...r, status: newStatus } : r));
     
     try {
-      const { error } = await supabase
-        .from('time_off_requests')
-        .update({ status: newStatus })
-        .eq('id', id);
-        
-      if (error) {
-        alert("Failed to update request: " + error.message);
-        fetchRequests();
+      const res = await fetch('/api/time-off', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: newStatus })
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        alert("Failed to update request: " + (data.error || 'Unknown error'));
+        fetchRequests(); // Revert optimistic update
       }
     } catch (err: any) {
       alert("System Error: " + err.message);
-      fetchRequests();
+      fetchRequests(); // Revert optimistic update
     }
   };
 
@@ -195,18 +199,21 @@ export default function TimeOff() {
         status: 'pending'
       };
 
-      const { error } = await supabase
-        .from('time_off_requests')
-        .insert(payload);
-
+      const res = await fetch('/api/time-off', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      const data = await res.json();
       setSubmitting(false);
       
-      if (!error) {
+      if (res.ok) {
         setShowDialog(false);
         setFormData({ type: "pto", startDate: "", endDate: "", reason: "" });
         fetchRequests();
       } else {
-        alert("Database Error: " + error.message);
+        alert("Submission Error: " + (data.error || 'Unknown error'));
       }
     } catch (err: any) {
       setSubmitting(false);
