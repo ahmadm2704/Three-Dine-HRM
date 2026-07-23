@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { supabase } from '@/lib/supabase';
 
 export async function POST(request: Request) {
   try {
@@ -9,35 +10,39 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email and password are required.' }, { status: 400 });
     }
 
-    // 1 & 2. Development bypass: Look up the employee record by email, or grab the first available
-    let { data: employee, error: empError } = await supabaseAdmin
+    // 1. Verify credentials using Supabase Auth (Checks actual password)
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (authError || !authData.user) {
+      return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
+    }
+
+    // 2. Look up the employee record by email
+    const { data: employee, error: empError } = await supabaseAdmin
       .from('employees')
       .select('id, first_name, last_name, email, job_title, employment_status, departments ( name )')
       .eq('email', email)
       .single();
 
     if (empError || !employee) {
-      console.warn('Employee email not found, attempting to login with fallback user...');
-      const { data: fallbackEmployees } = await supabaseAdmin
-        .from('employees')
-        .select('id, first_name, last_name, email, job_title, employment_status, departments ( name )')
-        .limit(1);
-
-      if (fallbackEmployees && fallbackEmployees.length > 0) {
-        employee = fallbackEmployees[0];
-      } else {
-        return NextResponse.json({ error: 'No employee accounts exist in the database.' }, { status: 400 });
-      }
+       return NextResponse.json({ error: 'Employee account exists, but no profile was found in the database.' }, { status: 404 });
     }
 
     // 3. Fetch their actual role from Supabase Auth app_metadata
     let role = 'employee';
-    const { data: usersData, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
-    
-    if (!usersError && usersData?.users) {
-      const authUser = usersData.users.find(u => u.email === employee?.email);
-      if (authUser?.app_metadata?.role) {
-        role = authUser.app_metadata.role;
+    if (authData.user.app_metadata?.role) {
+      role = authData.user.app_metadata.role;
+    } else {
+      // Fallback check if it was missing from the session for some reason
+      const { data: usersData } = await supabaseAdmin.auth.admin.listUsers();
+      if (usersData?.users) {
+        const adminAuthUser = usersData.users.find(u => u.email === email);
+        if (adminAuthUser?.app_metadata?.role) {
+          role = adminAuthUser.app_metadata.role;
+        }
       }
     }
 

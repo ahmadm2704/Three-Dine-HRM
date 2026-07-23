@@ -10,6 +10,14 @@ import { Label } from "@/components/ui/label";
 import { ThreeDBackground } from "@/components/ui/ThreeDBackground";
 import { ThreeDCard } from "@/components/ui/ThreeDCard";
 import { ThreeDInteractiveGlobe } from "@/components/ui/ThreeDInteractiveGlobe";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { 
   ArrowRight, 
   Lock, 
@@ -30,6 +38,10 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState("");
+  const [resetError, setResetError] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +74,35 @@ export default function LoginPage() {
       console.error(err);
       setLoading(false);
       setErrorMsg("An unexpected connection error occurred.");
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetLoading(true);
+    setResetError("");
+    setResetSuccess("");
+
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: resetEmail })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setResetSuccess(data.message);
+        setResetEmail("");
+      } else {
+        setResetError(data.error || "An error occurred during password reset.");
+      }
+    } catch (err) {
+      console.error(err);
+      setResetError("An unexpected connection error occurred.");
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -212,7 +253,7 @@ export default function LoginPage() {
                   </motion.div>
                 )}
 
-                <form onSubmit={handleLogin} className="space-y-5">
+                <form onSubmit={handleLogin} className="space-y-5" suppressHydrationWarning>
                   <div className="space-y-2">
                     <Label htmlFor="email" className="text-xs uppercase tracking-wider font-mono text-blue-300 flex items-center justify-between font-bold">
                       <span>Work Email</span>
@@ -237,9 +278,44 @@ export default function LoginPage() {
                       <Label htmlFor="password" className="text-xs uppercase tracking-wider font-mono text-blue-300 font-bold">
                         Password
                       </Label>
-                      <a href="#" className="text-xs font-mono text-sky-400 hover:text-sky-300 hover:underline transition-colors">
-                        Forgot Key?
-                      </a>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <button type="button" suppressHydrationWarning className="text-xs font-mono text-sky-400 hover:text-sky-300 hover:underline transition-colors focus:outline-none">
+                            Forgot Key?
+                          </button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md bg-[#0B0F19] border-blue-500/30 text-white">
+                          <DialogHeader>
+                            <DialogTitle className="text-white text-xl font-bold uppercase tracking-tight">System Access Recovery</DialogTitle>
+                            <DialogDescription className="text-muted-foreground text-xs mt-1">
+                              Enter your work email. A new secure credential key will be transmitted to your registered personal email address.
+                            </DialogDescription>
+                          </DialogHeader>
+                          
+                          <form onSubmit={handleForgotPassword} className="space-y-4 mt-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="reset-email" className="text-xs uppercase font-mono text-blue-300 font-bold">Work Email</Label>
+                              <Input
+                                id="reset-email"
+                                type="email"
+                                value={resetEmail}
+                                onChange={(e) => setResetEmail(e.target.value)}
+                                placeholder="you@threedine.com"
+                                className="bg-black/50 border-blue-500/30 focus:border-blue-400 focus:ring-1 focus:ring-blue-400/50 text-white text-sm"
+                                required
+                              />
+                            </div>
+                            
+                            {resetError && <div className="text-xs text-rose-400 p-2.5 bg-rose-500/10 border border-rose-500/30 rounded-xl font-mono flex items-center gap-2"><ShieldCheck className="w-3.5 h-3.5"/>{resetError}</div>}
+                            {resetSuccess && <div className="text-xs text-emerald-400 p-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl font-mono flex items-center gap-2"><ShieldCheck className="w-3.5 h-3.5"/>{resetSuccess}</div>}
+                            
+                            <Button type="submit" disabled={resetLoading} className="w-full bg-blue-600 hover:bg-blue-500 text-white uppercase text-xs font-bold tracking-wider h-11 rounded-xl transition-all">
+                              {resetLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                              Transmit Credentials
+                            </Button>
+                          </form>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                     <div className="relative group">
                       <Lock className="absolute left-3.5 top-3 h-5 w-5 text-blue-400/70 group-focus-within:text-blue-400 transition-colors" />
@@ -257,6 +333,7 @@ export default function LoginPage() {
 
                   <Button 
                     type="submit" 
+                    suppressHydrationWarning
                     className="w-full h-12 text-sm font-extrabold tracking-wider uppercase bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_25px_rgba(37,99,235,0.5)] transition-all duration-300 rounded-xl relative overflow-hidden group border border-blue-400/40" 
                     disabled={loading}
                   >
