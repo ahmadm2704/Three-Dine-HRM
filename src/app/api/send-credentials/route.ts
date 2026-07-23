@@ -49,14 +49,11 @@ export async function POST(request: Request) {
     };
 
     // 2. Employee Welcome Email
-    const recipientEmails = [email];
-    if (personalEmail && personalEmail !== email) {
-      recipientEmails.push(personalEmail);
-    }
+    const targetEmail = personalEmail || email;
 
     const employeeMailOptions = {
       from: process.env.SMTP_EMAIL,
-      to: recipientEmails.join(','),
+      to: targetEmail,
       subject: `Welcome to Three Dine Technology, ${firstName}! 🎉`,
       text: `Welcome aboard, ${firstName}!\n\nWe are thrilled to have you join the ${department} team as our new ${role}.\n\nHere are your login credentials for the portal:\nLogin URL: ${loginUrl}\nWork Email: ${email}\nTemporary Password: ${finalPassword}\n\nPlease log in to view your onboarding tasks.\n\nBest regards,\nThree Dine Technology`,
       html: `
