@@ -5,7 +5,7 @@ const DEFAULT_SUPER_ADMIN = {
   id: "admin-super-001",
   first_name: "Ali",
   last_name: "Danish",
-  email: "admin@threedinecorporation.com",
+  email: "ali@threedinecorporation.com",
   job_title: "Chief Executive Officer",
   employment_status: "active",
   employment_type: "full-time",
@@ -53,14 +53,7 @@ export async function GET() {
       });
     }
 
-    // Ensure admin@threedinecorporation.com is ALWAYS present
-    const combined: any[] = [...dbEmployees];
-    const adminExists = combined.some(e => e.email?.toLowerCase() === DEFAULT_SUPER_ADMIN.email.toLowerCase());
-    if (!adminExists) {
-      combined.unshift(DEFAULT_SUPER_ADMIN as any);
-    }
-
-    return NextResponse.json({ employees: combined }, { status: 200 });
+    return NextResponse.json({ employees: dbEmployees }, { status: 200 });
   } catch (error: any) {
     console.error('Internal server error fetching employees:', error);
     return NextResponse.json({ employees: [DEFAULT_SUPER_ADMIN] }, { status: 200 });

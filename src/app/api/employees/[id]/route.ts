@@ -51,6 +51,8 @@ export async function DELETE(request: Request, props: { params: Promise<{ id: st
       supabaseAdmin.from('employees').update({ manager_id: parentManagerId }).eq('manager_id', id),
       supabaseAdmin.from('documents').update({ uploaded_by: null }).eq('uploaded_by', id),
       supabaseAdmin.from('audit_log').update({ actor_id: null }).eq('actor_id', id),
+      supabaseAdmin.from('time_off_requests').delete().eq('employee_id', id),
+      supabaseAdmin.from('performance_reviews').delete().eq('employee_id', id),
     ]);
 
     const { error: deleteDbError } = await supabaseAdmin
